@@ -4,12 +4,12 @@ import os
 from datetime import datetime
 
 # ---------- PAGE CONFIG ----------
-st.set_page_config(page_title="Student Analytics Dashboard", layout="wide")
+st.set_page_config(page_title="Student Management System", layout="wide")
 
-# ---------- THEME TOGGLE ----------
+# ---------- THEME ----------
 theme = st.sidebar.toggle("🌌 Dark Mode", value=True)
 
-# ---------- GLASS UI ----------
+# ---------- UI ----------
 st.markdown(f"""
 <style>
 .stApp {{
@@ -27,12 +27,16 @@ section[data-testid="stSidebar"] {{
     border-radius: 12px;
     color: white;
     font-weight: bold;
+    padding: 0.6rem 1rem;
+    transition: 0.25s ease;
+    box-shadow: 0 8px 22px rgba(31,111,235,0.35);
 }}
 
-[data-testid="metric-container"] {{
-    background: rgba(13,17,23,0.7);
-    border-radius: 12px;
-    padding: 15px;
+.stButton > button:hover {{
+    transform: translateY(-4px) scale(1.04);
+    box-shadow:
+        0 18px 40px rgba(31,111,235,0.65),
+        0 0 18px rgba(46,160,67,0.6);
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -50,7 +54,7 @@ st.sidebar.title("📊 Dashboard")
 
 menu = st.sidebar.radio(
     "Navigation",
-    ["Dashboard", "Add Record", "Reports", "AI Insights"]
+    ["Dashboard", "Add Record", "Edit Record", "Reports", "AI Insights"]
 )
 
 # ================= DASHBOARD =================
@@ -74,7 +78,7 @@ if menu == "Dashboard":
 # ================= ADD RECORD =================
 elif menu == "Add Record":
 
-    st.title("✍️ Add Student Record")
+    st.title("✍️ Add / Manage Student Records")
 
     name = st.text_input("Student Name")
     roll = st.text_input("Roll Number")
@@ -108,6 +112,117 @@ elif menu == "Add Record":
                     "Roll": roll,
                     "Subject": subject,
                     "Marks": marks,
+                    "Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }])
+
+                data = pd.concat([data,new],ignore_index=True)
+                data.to_csv(FILE,index=False)
+
+                st.success("Record added")
+                st.rerun()
+
+    st.divider()
+    st.subheader("🛠 Manage Existing Data")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("Remove Last Record"):
+
+            if not data.empty:
+                data = data.iloc[:-1]
+                data.to_csv(FILE,index=False)
+                st.success("Last record removed")
+                st.rerun()
+
+    with col2:
+        if st.button("Remove Everything"):
+
+            pd.DataFrame(columns=["Name","Roll","Subject","Marks","Time"]).to_csv(FILE,index=False)
+            st.success("All data removed")
+            st.rerun()
+
+# ================= EDIT RECORD =================
+elif menu == "Edit Record":
+
+    st.title("🧠 Edit / Delete Specific Record")
+
+    if data.empty:
+        st.info("No records available")
+
+    else:
+        roll_search = st.text_input("🔎 Enter Roll Number")
+
+        if roll_search:
+
+            results = data[data["Roll"] == roll_search]
+
+            if results.empty:
+                st.warning("No record found")
+
+            else:
+                for idx, row in results.iterrows():
+
+                    st.write(f"""
+                    **Name:** {row['Name']}  
+                    **Subject:** {row['Subject']}  
+                    **Marks:** {row['Marks']}  
+                    """)
+
+                    new_marks = st.number_input(
+                        f"Edit Marks for {row['Subject']}",
+                        0, 100,
+                        int(row["Marks"]),
+                        key=f"marks_{idx}"
+                    )
+
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        if st.button(f"Update {idx}"):
+                            data.at[idx, "Marks"] = new_marks
+                            data.to_csv(FILE,index=False)
+                            st.success("Updated")
+                            st.rerun()
+
+                    with col2:
+                        if st.button(f"Delete {idx}"):
+                            data = data.drop(idx)
+                            data.to_csv(FILE,index=False)
+                            st.success("Deleted")
+                            st.rerun()
+
+# ================= REPORTS =================
+elif menu == "Reports":
+
+    st.title("📥 Reports")
+
+    if data.empty:
+        st.info("No data")
+
+    else:
+        leaderboard = data.sort_values("Marks", ascending=False).head(10)
+        st.subheader("🏆 Topper Leaderboard")
+        st.dataframe(leaderboard, use_container_width=True)
+
+        risk = data[data["Marks"] < 50]
+        st.subheader("📉 Risk Students")
+        st.dataframe(risk, use_container_width=True)
+
+# ================= AI INSIGHTS =================
+elif menu == "AI Insights":
+
+    st.title("🧠 Insights")
+
+    if data.empty:
+        st.info("No data")
+
+    else:
+        topper = data.loc[data["Marks"].idxmax()]
+        weakest = data.loc[data["Marks"].idxmin()]
+
+        st.success(f"🏆 Top Performer: {topper['Name']} ({topper['Marks']})")
+        st.warning(f"⚠️ Needs Improvement: {weakest['Name']} ({weakest['Marks']})")                    "Marks": marks,
                     "Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }])
 
