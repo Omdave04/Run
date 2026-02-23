@@ -3,9 +3,9 @@ import pandas as pd
 import os
 
 # ---------- PAGE CONFIG ----------
-st.set_page_config(page_title="Student Dashboard", layout="wide")
+st.set_page_config(page_title="Student Analytics Dashboard", layout="wide")
 
-# ---------- DARK/LIGHT TOGGLE ----------
+# ---------- THEME TOGGLE ----------
 theme = st.sidebar.toggle("🌌 Dark Mode", value=True)
 
 # ---------- GLASS UI ----------
@@ -26,6 +26,12 @@ section[data-testid="stSidebar"] {{
     border-radius: 12px;
     color: white;
     font-weight: bold;
+}}
+
+[data-testid="metric-container"] {{
+    background: rgba(13,17,23,0.7);
+    border-radius: 12px;
+    padding: 15px;
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -61,24 +67,56 @@ if menu == "Dashboard":
         c3.metric("Highest", data["Marks"].max())
         c4.metric("Lowest", data["Marks"].min())
 
-        st.subheader("Performance Chart")
+        st.subheader("📈 Subject Performance")
         st.bar_chart(data.groupby("Subject")["Marks"].mean())
 
 # ================= REPORTS =================
 elif menu == "Reports":
 
-    st.title("📥 Export Reports")
+    st.title("📥 Reports & Export Center")
 
     if data.empty:
-        st.info("No data")
+        st.info("No data available")
 
     else:
-        st.download_button(
-            "Download CSV Report",
-            data.to_csv(index=False),
-            "student_report.csv",
-            "text/csv"
+
+        report_type = st.selectbox(
+            "Select Report",
+            [
+                "Full Report",
+                "Topper Leaderboard",
+                "Risk Students",
+                "Time-based Report"
+            ]
         )
+
+        if report_type == "Full Report":
+
+            st.dataframe(data, use_container_width=True)
+
+            st.download_button(
+                "Download Full Report",
+                data.to_csv(index=False),
+                "full_report.csv",
+                "text/csv"
+            )
+
+        elif report_type == "Topper Leaderboard":
+
+            leaderboard = data.sort_values("Marks", ascending=False).head(10)
+            st.dataframe(leaderboard, use_container_width=True)
+
+        elif report_type == "Risk Students":
+
+            risk = data[data["Marks"] < 50]
+            st.dataframe(risk, use_container_width=True)
+
+        elif report_type == "Time-based Report":
+
+            data["Time"] = pd.to_datetime(data["Time"])
+            time_data = data.sort_values("Time")
+
+            st.line_chart(time_data.set_index("Time")["Marks"])
 
 # ================= AI INSIGHTS =================
 elif menu == "AI Insights":
