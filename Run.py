@@ -1,15 +1,14 @@
 import streamlit as st
 import pandas as pd
 import os
-import plotly.express as px
 
 # ---------- PAGE CONFIG ----------
-st.set_page_config(page_title="GOD MODE Dashboard", layout="wide")
+st.set_page_config(page_title="Student Dashboard", layout="wide")
 
-# ---------- THEME TOGGLE ----------
+# ---------- DARK/LIGHT TOGGLE ----------
 theme = st.sidebar.toggle("🌌 Dark Mode", value=True)
 
-# ---------- FLOATING SIDEBAR + GLASS UI ----------
+# ---------- GLASS UI ----------
 st.markdown(f"""
 <style>
 .stApp {{
@@ -20,21 +19,6 @@ st.markdown(f"""
 section[data-testid="stSidebar"] {{
     background: rgba(13,17,23,0.75);
     backdrop-filter: blur(14px);
-    border-right: 1px solid rgba(255,255,255,0.08);
-}}
-
-.glass {{
-    background: rgba(13,17,23,0.65);
-    border-radius: 18px;
-    padding: 22px;
-    backdrop-filter: blur(18px);
-    border: 1px solid rgba(255,255,255,0.08);
-    transition: 0.25s ease;
-}}
-
-.glass:hover {{
-    transform: translateY(-6px);
-    box-shadow: 0 20px 50px rgba(0,0,0,0.65);
 }}
 
 .stButton > button {{
@@ -42,13 +26,13 @@ section[data-testid="stSidebar"] {{
     border-radius: 12px;
     color: white;
     font-weight: bold;
-    box-shadow: 0 0 18px rgba(31,111,235,0.6);
 }}
 </style>
 """, unsafe_allow_html=True)
 
 # ---------- CSV ----------
 FILE = "students.csv"
+
 if not os.path.exists(FILE):
     pd.DataFrame(columns=["Name","Roll","Subject","Marks","Time"]).to_csv(FILE,index=False)
 
@@ -65,7 +49,7 @@ menu = st.sidebar.radio(
 # ================= DASHBOARD =================
 if menu == "Dashboard":
 
-    st.title("📊 GOD MODE Dashboard")
+    st.title("📊 Student Performance Dashboard")
 
     if data.empty:
         st.info("No data available")
@@ -77,15 +61,8 @@ if menu == "Dashboard":
         c3.metric("Highest", data["Marks"].max())
         c4.metric("Lowest", data["Marks"].min())
 
-        # INTERACTIVE CHART
-        fig = px.bar(
-            data.groupby("Subject")["Marks"].mean().reset_index(),
-            x="Subject",
-            y="Marks",
-            color="Subject",
-            title="Average Marks by Subject"
-        )
-        st.plotly_chart(fig, use_container_width=True)
+        st.subheader("Performance Chart")
+        st.bar_chart(data.groupby("Subject")["Marks"].mean())
 
 # ================= REPORTS =================
 elif menu == "Reports":
