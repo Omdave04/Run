@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+from datetime import datetime
 
 # ---------- PAGE CONFIG ----------
 st.set_page_config(page_title="Student Analytics Dashboard", layout="wide")
@@ -49,7 +50,7 @@ st.sidebar.title("📊 Dashboard")
 
 menu = st.sidebar.radio(
     "Navigation",
-    ["Dashboard", "Reports", "AI Insights"]
+    ["Dashboard", "Add Record", "Reports", "AI Insights"]
 )
 
 # ================= DASHBOARD =================
@@ -69,6 +70,52 @@ if menu == "Dashboard":
 
         st.subheader("📈 Subject Performance")
         st.bar_chart(data.groupby("Subject")["Marks"].mean())
+
+# ================= ADD RECORD =================
+elif menu == "Add Record":
+
+    st.title("✍️ Add Student Record")
+
+    name = st.text_input("Student Name")
+    roll = st.text_input("Roll Number")
+
+    subject = st.selectbox(
+        "Subject",
+        ["Math","Science","English","Computer"],
+        index=None,
+        placeholder="Select Subject"
+    )
+
+    marks = st.number_input("Marks",0,100)
+
+    if st.button("Add Record"):
+
+        name = name.strip()
+        roll = roll.strip()
+
+        if not name or not roll or not subject:
+            st.warning("Fill all fields")
+
+        else:
+            duplicate = ((data["Roll"] == roll) & (data["Subject"] == subject)).any()
+
+            if duplicate:
+                st.error("Duplicate entry")
+
+            else:
+                new = pd.DataFrame([{
+                    "Name": name,
+                    "Roll": roll,
+                    "Subject": subject,
+                    "Marks": marks,
+                    "Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }])
+
+                data = pd.concat([data,new],ignore_index=True)
+                data.to_csv(FILE,index=False)
+
+                st.success("Record added successfully")
+                st.rerun()
 
 # ================= REPORTS =================
 elif menu == "Reports":
